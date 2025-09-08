@@ -32,7 +32,7 @@ class RolesAndAdminSeeder extends Seeder
         );
 
 
-                    $supervisorId = DB::table('roles')->where('slug','supervisor')->value('id');
+            $supervisorId = DB::table('roles')->where('slug','supervisor')->value('id');
             $tecnicoId    = DB::table('roles')->where('slug','tecnico')->value('id');
 
             $supervisor = User::updateOrCreate(
