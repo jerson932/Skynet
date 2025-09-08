@@ -597,7 +597,6 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'App\\Models\\Visit' => __DIR__ . '/../..' . '/app/Models/Visit.php',
         'App\\Policies\\ClientPolicy' => __DIR__ . '/../..' . '/app/Policies/ClientPolicy.php',
         'App\\Policies\\VisitPolicy' => __DIR__ . '/../..' . '/app/Policies/VisitPolicy.php',
-        'App\\Providers\\AppServiceProvider' => __DIR__ . '/../..' . '/app/Providers/AppServiceProvider.php',
         'App\\View\\Components\\AppLayout' => __DIR__ . '/../..' . '/app/View/Components/AppLayout.php',
         'App\\View\\Components\\GuestLayout' => __DIR__ . '/../..' . '/app/View/Components/GuestLayout.php',
         'Attribute' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',

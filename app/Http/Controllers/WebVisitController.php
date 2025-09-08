@@ -9,37 +9,36 @@ use Illuminate\Http\Request;
 
 class WebVisitController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth'); // usa sesión (Breeze)
-    }
-
-    // Vista de visitas (filtradas por rol)
     public function index(Request $request)
-    {
-        $user = $request->user();
-        $q = Visit::with(['client','supervisor','tecnico'])
-                  ->orderBy('scheduled_at','desc');
+{
+    $user = $request->user();
+    $q = Visit::with(['client','supervisor','tecnico'])
+              ->orderBy('scheduled_at','desc');
 
-        if ($user->isAdmin()) {
-            // ve todas
-        } elseif ($user->isSupervisor()) {
-            $q->where(function($w) use ($user){
-                $w->where('supervisor_id', $user->id)
-                  ->orWhere('tecnico_id', $user->id);
-            });
-        } else { // técnico
-            $q->where('tecnico_id', $user->id);
-        }
-
-        // Solo de hoy por defecto
-        $today = $request->query('date', now()->toDateString());
-        $q->whereDate('scheduled_at', $today);
-
-        $visits = $q->paginate(10);
-
-        return view('visits.index', compact('visits','today'));
+    if ($user->isAdmin()) {
+        // ve todas
+    } elseif ($user->isSupervisor()) {
+        $q->where(function($w) use ($user){
+            $w->where('supervisor_id', $user->id)
+              ->orWhere('tecnico_id', $user->id);
+        });
+    } else { // técnico
+        $q->where('tecnico_id', $user->id);
     }
+
+    // ✅ Filtro por fecha SOLO si viene ?date=YYYY-MM-DD
+    if ($date = $request->query('date')) {
+        $q->whereDate('scheduled_at', $date);
+    }
+
+    $visits = $q->paginate(10);
+
+    // Pasamos la fecha (si existe) solo para que la vista sepa qué mostrar en el input
+    return view('visits.index', [
+        'visits' => $visits,
+        'today'  => $request->query('date') // puede ser null
+    ]);
+}
 
     // Check-in (solo técnico asignado)
     public function checkIn(Request $request, Visit $visit)

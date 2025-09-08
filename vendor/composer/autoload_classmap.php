@@ -29,7 +29,6 @@ return array(
     'App\\Models\\Visit' => $baseDir . '/app/Models/Visit.php',
     'App\\Policies\\ClientPolicy' => $baseDir . '/app/Policies/ClientPolicy.php',
     'App\\Policies\\VisitPolicy' => $baseDir . '/app/Policies/VisitPolicy.php',
-    'App\\Providers\\AppServiceProvider' => $baseDir . '/app/Providers/AppServiceProvider.php',
     'App\\View\\Components\\AppLayout' => $baseDir . '/app/View/Components/AppLayout.php',
     'App\\View\\Components\\GuestLayout' => $baseDir . '/app/View/Components/GuestLayout.php',
     'Attribute' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
