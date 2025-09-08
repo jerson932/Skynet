@@ -4,7 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route; // 👈 importar Route
 use App\Http\Controllers\ClientController;
-use App\Http\Controllers\VisitController;
+use App\Http\Controllers\VisitController;   
 use App\Models\User;
 
 Route::get('/ping', fn () => ['pong' => true]); // 👈 ruta de prueba

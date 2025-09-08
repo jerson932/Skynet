@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Visit;
 use App\Models\Client;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\VisitClosedMail;
 use Illuminate\Http\Request;
 
 class VisitController extends Controller
@@ -108,21 +110,30 @@ class VisitController extends Controller
     }
 
     // POST /api/visits/{visit}/check-out (solo técnico asignado)
-    public function checkOut(Request $request, Visit $visit)
-    {
-        $this->authorize('mark', $visit);
+  public function checkOut(Request $request, Visit $visit)
+{
+    $this->authorize('mark', $visit);
 
-        $data = $request->validate([
-            'lat' => 'required|numeric|between:-90,90',
-            'lng' => 'required|numeric|between:-180,180',
-        ]);
+    $data = $request->validate([
+        'lat' => 'required|numeric|between:-90,90',
+        'lng' => 'required|numeric|between:-180,180',
+    ]);
 
-        $visit->update([
-            'check_out_at'  => now(),
-            'check_out_lat' => $data['lat'],
-            'check_out_lng' => $data['lng'],
-        ]);
+    $visit->update([
+        'check_out_at'  => now(),
+        'check_out_lat' => $data['lat'],
+        'check_out_lng' => $data['lng'],
+    ]);
 
-        return response()->json($visit->fresh()->load(['client','supervisor','tecnico']));
+    // Recargar relaciones
+    $visit->load(['client','supervisor','tecnico']);
+
+    // 👉 Enviar correo si el cliente tiene email
+    if (!empty($visit->client->email)) {
+        \Illuminate\Support\Facades\Mail::to($visit->client->email)
+            ->send(new \App\Mail\VisitClosedMail($visit));
     }
+
+    return response()->json($visit);
+}
 }
