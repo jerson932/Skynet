@@ -18,6 +18,12 @@
                 </div>
             </div>
 
+            @can('create', App\Models\Client::class)
+            <x-nav-link :href="route('clients.web.index')" :active="request()->routeIs('clients.web.*')">
+                {{ __('Clientes') }}
+            </x-nav-link>
+            @endcan
+
             <!-- Settings Dropdown -->
             <div class="hidden sm:flex sm:items-center sm:ms-6">
                 <x-dropdown align="right" width="48">

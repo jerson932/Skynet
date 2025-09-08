@@ -587,6 +587,7 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'App\\Http\\Controllers\\Controller' => __DIR__ . '/../..' . '/app/Http/Controllers/Controller.php',
         'App\\Http\\Controllers\\ProfileController' => __DIR__ . '/../..' . '/app/Http/Controllers/ProfileController.php',
         'App\\Http\\Controllers\\VisitController' => __DIR__ . '/../..' . '/app/Http/Controllers/VisitController.php',
+        'App\\Http\\Controllers\\WebClientController' => __DIR__ . '/../..' . '/app/Http/Controllers/WebClientController.php',
         'App\\Http\\Controllers\\WebVisitController' => __DIR__ . '/../..' . '/app/Http/Controllers/WebVisitController.php',
         'App\\Http\\Requests\\Auth\\LoginRequest' => __DIR__ . '/../..' . '/app/Http/Requests/Auth/LoginRequest.php',
         'App\\Http\\Requests\\ProfileUpdateRequest' => __DIR__ . '/../..' . '/app/Http/Requests/ProfileUpdateRequest.php',

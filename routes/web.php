@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WebVisitController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\WebClientController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -27,6 +28,16 @@ Route::middleware('auth')->group(function () {
     // 👇 necesarias para el botón
     Route::get('/visits/create', [WebVisitController::class, 'create'])->name('visits.create');
     Route::post('/visits',        [WebVisitController::class, 'store'])->name('visits.store');
+
+    Route::get('/visits/{visit}/edit',  [WebVisitController::class, 'edit'])->name('visits.edit');
+Route::put('/visits/{visit}',       [WebVisitController::class, 'update'])->name('visits.update');
+Route::delete('/visits/{visit}',    [WebVisitController::class, 'destroy'])->name('visits.destroy');
+
+
+
+     Route::resource('clients-web', WebClientController::class)
+        ->parameters(['clients-web' => 'client'])
+        ->names('clients.web'); // clients.web.index, .create, .store, etc
 });
 
 require __DIR__.'/auth.php';

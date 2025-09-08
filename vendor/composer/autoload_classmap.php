@@ -19,6 +19,7 @@ return array(
     'App\\Http\\Controllers\\Controller' => $baseDir . '/app/Http/Controllers/Controller.php',
     'App\\Http\\Controllers\\ProfileController' => $baseDir . '/app/Http/Controllers/ProfileController.php',
     'App\\Http\\Controllers\\VisitController' => $baseDir . '/app/Http/Controllers/VisitController.php',
+    'App\\Http\\Controllers\\WebClientController' => $baseDir . '/app/Http/Controllers/WebClientController.php',
     'App\\Http\\Controllers\\WebVisitController' => $baseDir . '/app/Http/Controllers/WebVisitController.php',
     'App\\Http\\Requests\\Auth\\LoginRequest' => $baseDir . '/app/Http/Requests/Auth/LoginRequest.php',
     'App\\Http\\Requests\\ProfileUpdateRequest' => $baseDir . '/app/Http/Requests/ProfileUpdateRequest.php',

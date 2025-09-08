@@ -2,7 +2,12 @@
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Visitas <span class="text-gray-500">({{ $today }})</span>
+                Visitas
+                @if(request('date'))
+                    <span class="text-gray-500">({{ request('date') }})</span>
+                @else
+                    <span class="text-gray-500">(todas)</span>
+                @endif
             </h2>
 
             @can('create', App\Models\Visit::class)
@@ -26,15 +31,20 @@
                 </div>
             @endif
 
-            {{-- Filtro por fecha --}}
+            {{-- Filtro por fecha (opcional) --}}
             <form method="GET" class="flex w-full flex-col items-start gap-3 sm:flex-row sm:items-center">
                 <label class="text-sm text-gray-600">Fecha</label>
-                <input type="date" name="date" value="{{ $today }}"
+                <input type="date" name="date" value="{{ request('date') }}"
                        class="w-full max-w-xs rounded-lg border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                 <button
                     class="rounded-lg bg-gray-900 px-4 py-2 text-white shadow hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-600">
                     Filtrar
                 </button>
+                @if(request('date'))
+                    <a href="{{ route('visits.index') }}" class="rounded-lg px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50">
+                        Limpiar
+                    </a>
+                @endif
             </form>
 
             <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -92,23 +102,19 @@
                                     {{-- Estado --}}
                                     <td class="px-4 py-3">
                                         @if($status === 'completada')
-                                            <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
-                                                Completada
-                                            </span>
+                                            <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">Completada</span>
                                         @elseif($status === 'en curso')
-                                            <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
-                                                En curso
-                                            </span>
+                                            <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">En curso</span>
                                         @else
-                                            <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-800">
-                                                Pendiente
-                                            </span>
+                                            <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-800">Pendiente</span>
                                         @endif
                                     </td>
 
                                     {{-- Acciones --}}
                                     <td class="px-4 py-3">
-                                        <div class="flex justify-end gap-2">
+                                        <div class="flex justify-end gap-2 flex-wrap">
+
+                                            {{-- Botones del técnico asignado --}}
                                             @can('mark', $v)
                                                 @if(!$v->check_in_at)
                                                     <form action="{{ route('visits.checkin', $v) }}" method="POST" class="inline" onsubmit="return fillGeo(this)">
@@ -117,9 +123,6 @@
                                                         <input type="hidden" name="lng">
                                                         <button
                                                             class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 11c1.657 0 3-1.343 3-3S13.657 5 12 5 9 6.343 9 8s1.343 3 3 3Zm0 0v8"/>
-                                                            </svg>
                                                             Check-in
                                                         </button>
                                                     </form>
@@ -132,13 +135,31 @@
                                                         <input type="hidden" name="lng">
                                                         <button
                                                             class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                                                            </svg>
                                                             Check-out
                                                         </button>
                                                     </form>
                                                 @endif
+                                            @endcan
+
+                                            {{-- Admin / Supervisor (dueño) pueden editar --}}
+                                            @can('update', $v)
+                                                <a href="{{ route('visits.edit', $v) }}"
+                                                   class="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-amber-600">
+                                                    Editar
+                                                </a>
+                                            @endcan
+
+                                            {{-- Solo Admin puede eliminar --}}
+                                            @can('delete', $v)
+                                                <form action="{{ route('visits.destroy', $v) }}" method="POST" class="inline"
+                                                      onsubmit="return confirm('¿Eliminar la visita #{{ $v->id }}?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button
+                                                        class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-red-700">
+                                                        Eliminar
+                                                    </button>
+                                                </form>
                                             @endcan
                                         </div>
                                     </td>

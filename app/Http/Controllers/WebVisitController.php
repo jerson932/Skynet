@@ -115,4 +115,29 @@ class WebVisitController extends Controller
         return redirect()->route('visits.index')
                          ->with('status','Visita creada correctamente.');
     }
+
+public function edit(Request $request, \App\Models\Visit $visit) {
+    $this->authorize('update', $visit);
+    $clients  = \App\Models\Client::orderBy('name')->get();
+    $tecnicos = \App\Models\User::whereHas('role', fn($q)=>$q->where('slug','tecnico'))->orderBy('name')->get();
+    return view('visits.edit', compact('visit','clients','tecnicos'));
+}
+
+public function update(Request $request, \App\Models\Visit $visit) {
+    $this->authorize('update', $visit);
+    $data = $request->validate([
+        'client_id'    => 'required|exists:clients,id',
+        'tecnico_id'   => 'required|exists:users,id',
+        'scheduled_at' => 'required|date',
+        'notes'        => 'nullable|string',
+    ]);
+    $visit->update($data);
+    return redirect()->route('visits.index')->with('status','Visita actualizada');
+}
+
+public function destroy(Request $request, \App\Models\Visit $visit) {
+    $this->authorize('delete', $visit);
+    $visit->delete();
+    return redirect()->route('visits.index')->with('status','Visita eliminada');
+}
 }
