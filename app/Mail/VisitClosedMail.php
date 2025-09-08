@@ -6,6 +6,7 @@ use App\Models\Visit;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
+use Barryvdh\DomPDF\Facade\Pdf; // 👈
 
 class VisitClosedMail extends Mailable
 {
@@ -20,9 +21,12 @@ class VisitClosedMail extends Mailable
 
     public function build()
     {
+        // Generar PDF desde la vista
+        $pdf = Pdf::loadView('pdf.visit', ['visit' => $this->visit])->output();
+        $fileName = 'reporte-visita-'.$this->visit->id.'.pdf';
+
         return $this->subject('Visita finalizada - '.$this->visit->client->name)
-                    ->markdown('emails.visits.closed', [
-                        'visit' => $this->visit,
-                    ]);
+            ->markdown('emails.visits.closed', ['visit' => $this->visit])
+            ->attachData($pdf, $fileName, ['mime' => 'application/pdf']);
     }
 }

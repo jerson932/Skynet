@@ -23,10 +23,11 @@ class VisitPolicy
     }
 
     // Crear (solo supervisor o admin)
-    public function create(User $user): bool
-    {
-        return $user->isAdmin() || $user->isSupervisor();
-    }
+   public function create(User $user): bool
+{
+    return $user->isAdmin() || $user->isSupervisor();
+}
+
 
     // Actualizar (admin o supervisor dueño de la visita)
     public function update(User $user, Visit $visit): bool
@@ -43,8 +44,8 @@ class VisitPolicy
     }
 
     // Marcar check-in/out (solo el técnico asignado)
-    public function mark(User $user, Visit $visit): bool
+   public function mark(User $user, Visit $visit): bool
     {
-        return $user->isTecnico() && $visit->tecnico_id === $user->id;
+        return $user->id === $visit->tecnico_id;
     }
 }
