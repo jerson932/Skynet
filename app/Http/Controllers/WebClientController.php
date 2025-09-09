@@ -23,7 +23,7 @@ class WebClientController extends Controller
                    ->orWhere('email','like',"%$q%")
             )
             ->orderByDesc('id')
-            ->paginate(10);
+            ->paginate(05);
 
         return view('clients.index', compact('clients','q'));
     }

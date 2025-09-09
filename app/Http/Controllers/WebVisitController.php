@@ -13,10 +13,10 @@ class WebVisitController extends Controller
 {
     $user = $request->user();
     $date = $request->query('date'); // puede ser null
-
-    $q = \App\Models\Visit::with(['client','supervisor','tecnico'])
-        ->orderByDesc('scheduled_at')
-        ->orderByDesc('id');
+    
+$q = \App\Models\Visit::with(['client','supervisor','tecnico'])
+    ->orderBy('scheduled_at','desc')
+    ->orderBy('created_at','desc');
 
     // Filtro por rol
     $q->when($user->isAdmin(), function ($q) {
@@ -35,7 +35,7 @@ class WebVisitController extends Controller
     // Filtro por fecha (opcional)
     $q->when($date, fn($q) => $q->whereDate('scheduled_at', $date));
 
-    $visits = $q->paginate(10);
+    $visits = $q->paginate(05);
 
     return view('visits.index', [
         'visits' => $visits,

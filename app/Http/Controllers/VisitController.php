@@ -44,7 +44,7 @@ class VisitController extends Controller
         $q->whereDate('scheduled_at', $date);
     }
 
-    return response()->json($q->paginate(10));
+    return response()->json($q->paginate(05));
 }
 
 
