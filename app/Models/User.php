@@ -22,4 +22,16 @@ class User extends Authenticatable
     public function isAdmin(): bool      { return $this->hasRole('admin'); }
     public function isSupervisor(): bool { return $this->hasRole('supervisor'); }
     public function isTecnico(): bool    { return $this->hasRole('tecnico'); }
+
+ // Relación con supervisor
+public function supervisor()
+{
+    return $this->belongsTo(User::class, 'supervisor_id');
+}
+
+// Relación con técnicos (si el usuario es supervisor)
+public function tecnicos()
+{
+    return $this->hasMany(User::class, 'supervisor_id');
+}
 }

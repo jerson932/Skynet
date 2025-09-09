@@ -9,37 +9,40 @@ use Illuminate\Http\Request;
 
 class WebVisitController extends Controller
 {
-    public function index(Request $request)
+   public function index(Request $request)
 {
     $user = $request->user();
-    $q = Visit::with(['client','supervisor','tecnico'])
-              ->orderBy('scheduled_at','desc');
+    $date = $request->query('date'); // puede ser null
 
-    if ($user->isAdmin()) {
-        // ve todas
-    } elseif ($user->isSupervisor()) {
-        $q->where(function($w) use ($user){
+    $q = \App\Models\Visit::with(['client','supervisor','tecnico'])
+        ->orderByDesc('scheduled_at')
+        ->orderByDesc('id');
+
+    // Filtro por rol
+    $q->when($user->isAdmin(), function ($q) {
+        // Admin ve todo (no aplica filtro)
+    })->when($user->isSupervisor(), function ($q) use ($user) {
+        $q->where(function ($w) use ($user) {
             $w->where('supervisor_id', $user->id)
-              ->orWhere('tecnico_id', $user->id);
+              ->orWhereHas('tecnico', function ($t) use ($user) {
+                  $t->where('supervisor_id', $user->id);
+              });
         });
-    } else { // técnico
+    })->when($user->isTecnico(), function ($q) use ($user) {
         $q->where('tecnico_id', $user->id);
-    }
+    });
 
-    // ✅ Filtro por fecha SOLO si viene ?date=YYYY-MM-DD
-    if ($date = $request->query('date')) {
-        $q->whereDate('scheduled_at', $date);
-    }
+    // Filtro por fecha (opcional)
+    $q->when($date, fn($q) => $q->whereDate('scheduled_at', $date));
 
     $visits = $q->paginate(10);
 
-    // Pasamos la fecha (si existe) solo para que la vista sepa qué mostrar en el input
     return view('visits.index', [
         'visits' => $visits,
-        'today'  => $request->query('date') // puede ser null
+        'date'   => $date,
+        'today'  => $date ?? now()->toDateString(),
     ]);
 }
-
     // Check-in (solo técnico asignado)
     public function checkIn(Request $request, Visit $visit)
     {

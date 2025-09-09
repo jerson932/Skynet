@@ -28,6 +28,15 @@
                         @if($visit->client->address)
                             <div class="text-sm text-gray-600">Dirección: {{ $visit->client->address }}</div>
                         @endif
+                        
+                    </div>
+
+                                        {{-- Notas --}}
+                    <div class="mt-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Notas</h3>
+                        <p class="mt-1 text-gray-600">
+                            {{ $visit->notes ?? '— Sin notas —' }}
+                        </p>
                     </div>
 
                     <div>

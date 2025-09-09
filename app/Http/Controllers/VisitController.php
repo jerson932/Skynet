@@ -20,48 +20,60 @@ class VisitController extends Controller
     // GET /api/visits
     // Admin ve todo. Supervisor ve sus visitas y las de sus técnicos.
     // Técnico ve solo las asignadas a él.
-    public function index(Request $request)
-    {
-        $user = $request->user();
-        $q = Visit::with(['client','supervisor','tecnico'])->orderBy('scheduled_at','desc');
+ public function index(Request $request)
+{
+    $user = $request->user();
 
-        if ($user->isAdmin()) {
-            // nada
-        } elseif ($user->isSupervisor()) {
-            $q->where(function($w) use ($user) {
-                $w->where('supervisor_id', $user->id)
-                  ->orWhere('tecnico_id', $user->id);
-            });
-        } elseif ($user->isTecnico()) {
-            $q->where('tecnico_id', $user->id);
-        }
+    $q = \App\Models\Visit::with(['client','supervisor','tecnico'])
+        ->orderBy('scheduled_at','desc');
 
-        // filtro simple por fecha (?date=YYYY-MM-DD)
-        if ($date = $request->query('date')) {
-            $q->whereDate('scheduled_at', $date);
-        }
-
-        return response()->json($q->paginate(10));
+    if ($user->isAdmin()) {
+        // todo
+    } elseif ($user->isSupervisor()) {
+        $q->where(function ($w) use ($user) {
+            $w->where('supervisor_id', $user->id)
+              ->orWhereHas('tecnico', function($t) use ($user) {
+                  $t->where('supervisor_id', $user->id);
+              });
+        });
+    } else { // técnico
+        $q->where('tecnico_id', $user->id);
     }
 
+    if ($date = $request->query('date')) {
+        $q->whereDate('scheduled_at', $date);
+    }
+
+    return response()->json($q->paginate(10));
+}
+
+
     // POST /api/visits (supervisor o admin)
-    public function store(Request $request)
+   public function store(Request $request)
 {
     $data = $request->validate([
-        'client_id'     => 'required|exists:clients,id',
-        'tecnico_id'    => 'required|exists:users,id',
-        'scheduled_at'  => 'required|date',
-        'notes'         => 'nullable|string',
+        'client_id'    => 'required|exists:clients,id',
+        'tecnico_id'   => 'required|exists:users,id',
+        'scheduled_at' => 'required|date',
+        'notes'        => 'nullable|string',
     ]);
 
-    // 👇 supervisor = supervisor del técnico (si existe); si no, el creador
-    $tecnico = User::findOrFail($data['tecnico_id']);
-    $data['supervisor_id'] = $tecnico->supervisor_id ?? $request->user()->id;
+    $current = $request->user();
 
-    $visit = Visit::create($data);
+    if ($current->isSupervisor()) {
+        // Si la crea un supervisor, él queda como supervisor de la visita
+        $data['supervisor_id'] = $current->id;
+    } else {
+        // Si la crea Admin, usamos el supervisor del técnico
+        $tec = \App\Models\User::find($data['tecnico_id']);
+        $data['supervisor_id'] = $tec?->supervisor_id ?? $current->id; // fallback a admin si no tuviera
+    }
+
+    $visit = \App\Models\Visit::create($data);
 
     return response()->json($visit->load(['client','supervisor','tecnico']), 201);
 }
+
 
 
     // GET /api/visits/{visit}
