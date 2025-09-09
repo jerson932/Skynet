@@ -18,6 +18,8 @@
                 </svg>
                 Nueva visita
             </a>
+
+         
             @endcan
         </div>
     </x-slot>
@@ -74,7 +76,8 @@
                                     <td class="px-4 py-3 text-gray-800">
                                         {{ optional($v->scheduled_at)->format('Y-m-d H:i') }}
                                     </td>
-
+                                      
+                                    
                                     {{-- Check-in --}}
                                     <td class="px-4 py-3">
                                         @if($v->check_in_at)
@@ -99,6 +102,7 @@
                                         @endif
                                     </td>
 
+                                    
                                     {{-- Estado --}}
                                     <td class="px-4 py-3">
                                         @if($status === 'completada')
@@ -113,6 +117,12 @@
                                     {{-- Acciones --}}
                                     <td class="px-4 py-3">
                                         <div class="flex justify-end gap-2 flex-wrap">
+
+                                        {{-- Ver detalle (mapa + datos del cliente) --}}
+                                        <a href="{{ route('visits.show', $v) }}"
+                                        class="inline-flex items-center gap-2 rounded-lg bg-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-800 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
+                                        Ver
+                                        </a>
 
                                             {{-- Botones del técnico asignado --}}
                                             @can('mark', $v)
@@ -140,6 +150,21 @@
                                                     </form>
                                                 @endif
                                             @endcan
+
+                                            {{-- Enviar correo (si el cliente tiene email) --}}
+                                            @if(!empty($v->client->email))
+                                                <form action="{{ route('visits.sendmail', $v) }}" method="POST" class="inline">
+                                                    @csrf
+                                                    <button
+                                                        class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                        title="Enviar correo de visita">
+                                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l9 6 9-6M5 19h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2z"/>
+                                                        </svg>
+                                                        Enviar
+                                                    </button>
+                                                </form>
+                                            @endif
 
                                             {{-- Admin / Supervisor (dueño) pueden editar --}}
                                             @can('update', $v)

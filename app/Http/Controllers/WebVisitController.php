@@ -141,5 +141,43 @@ public function destroy(Request $request, \App\Models\Visit $visit) {
     $this->authorize('delete', $visit);
     $visit->delete();
     return redirect()->route('visits.index')->with('status','Visita eliminada');
+
+
+}
+
+public function sendMail(Request $request, \App\Models\Visit $visit)
+{
+    $user = $request->user();
+
+    // Permisos: Admin, o Supervisor dueño de la visita, o Técnico asignado
+    $allowed =
+        $user->isAdmin() ||
+        ($user->isSupervisor() && ($visit->supervisor_id === $user->id || $visit->tecnico_id === $user->id)) ||
+        ($user->isTecnico() && $visit->tecnico_id === $user->id);
+
+    if (!$allowed) abort(403, 'No autorizado');
+
+    if (empty($visit->client?->email)) {
+        return back()->with('status', 'El cliente no tiene email configurado.');
+    }
+
+    // Cargar relaciones para el PDF/mail
+    $visit->load(['client','supervisor','tecnico']);
+
+    \Illuminate\Support\Facades\Mail::to($visit->client->email)
+        ->send(new \App\Mail\VisitClosedMail($visit));
+
+    return back()->with('status', 'Correo enviado a '.$visit->client->email);
+}
+
+public function show(Request $request, \App\Models\Visit $visit)
+{
+    // Usa la policy VisitPolicy@view (ya la tienes)
+    $this->authorize('view', $visit);
+
+    // Carga relaciones necesarias
+    $visit->load(['client','supervisor','tecnico']);
+
+    return view('visits.show', compact('visit'));
 }
 }

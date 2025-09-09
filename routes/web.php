@@ -38,6 +38,12 @@ Route::delete('/visits/{visit}',    [WebVisitController::class, 'destroy'])->nam
      Route::resource('clients-web', WebClientController::class)
         ->parameters(['clients-web' => 'client'])
         ->names('clients.web'); // clients.web.index, .create, .store, etc
-});
+
+        Route::get('/visits/{visit}', [\App\Http\Controllers\WebVisitController::class, 'show'])
+    ->name('visits.show');
+
+
+Route::post('/visits/{visit}/send-mail', [\App\Http\Controllers\WebVisitController::class, 'sendMail'])
+    ->name('visits.sendmail');    });
 
 require __DIR__.'/auth.php';
