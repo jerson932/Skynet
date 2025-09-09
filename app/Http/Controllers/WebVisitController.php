@@ -94,27 +94,29 @@ class WebVisitController extends Controller
     }
 
     // Guardar nueva visita
-    public function store(Request $request)
-    {
-        $user = $request->user();
-        if (!($user->isAdmin() || $user->isSupervisor())) {
-            abort(403, 'No autorizado');
-        }
-
-        $data = $request->validate([
-            'client_id'    => 'required|exists:clients,id',
-            'tecnico_id'   => 'required|exists:users,id',
-            'scheduled_at' => 'required|date',
-            'notes'        => 'nullable|string',
-        ]);
-
-        $data['supervisor_id'] = $user->id;
-
-        Visit::create($data);
-
-        return redirect()->route('visits.index')
-                         ->with('status','Visita creada correctamente.');
+   public function store(Request $request)
+{
+    $user = $request->user();
+    if (!($user->isAdmin() || $user->isSupervisor())) {
+        abort(403, 'No autorizado');
     }
+
+    $data = $request->validate([
+        'client_id'    => 'required|exists:clients,id',
+        'tecnico_id'   => 'required|exists:users,id',
+        'scheduled_at' => 'required|date',
+        'notes'        => 'nullable|string',
+    ]);
+
+    // 👇 supervisor = supervisor del técnico (si existe); si no, el creador
+    $tecnico = \App\Models\User::findOrFail($data['tecnico_id']);
+    $data['supervisor_id'] = $tecnico->supervisor_id ?? $user->id;
+
+    \App\Models\Visit::create($data);
+
+    return redirect()->route('visits.index')
+                     ->with('status','Visita creada correctamente.');
+}
 
 public function edit(Request $request, \App\Models\Visit $visit) {
     $this->authorize('update', $visit);

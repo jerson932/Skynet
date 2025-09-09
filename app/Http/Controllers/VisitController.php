@@ -46,21 +46,23 @@ class VisitController extends Controller
 
     // POST /api/visits (supervisor o admin)
     public function store(Request $request)
-    {
-        $data = $request->validate([
-            'client_id'     => 'required|exists:clients,id',
-            'tecnico_id'    => 'required|exists:users,id',
-            'scheduled_at'  => 'required|date',
-            'notes'         => 'nullable|string',
-        ]);
+{
+    $data = $request->validate([
+        'client_id'     => 'required|exists:clients,id',
+        'tecnico_id'    => 'required|exists:users,id',
+        'scheduled_at'  => 'required|date',
+        'notes'         => 'nullable|string',
+    ]);
 
-        // supervisor_id = quien crea
-        $data['supervisor_id'] = $request->user()->id;
+    // 👇 supervisor = supervisor del técnico (si existe); si no, el creador
+    $tecnico = User::findOrFail($data['tecnico_id']);
+    $data['supervisor_id'] = $tecnico->supervisor_id ?? $request->user()->id;
 
-        $visit = Visit::create($data);
+    $visit = Visit::create($data);
 
-        return response()->json($visit->load(['client','supervisor','tecnico']), 201);
-    }
+    return response()->json($visit->load(['client','supervisor','tecnico']), 201);
+}
+
 
     // GET /api/visits/{visit}
     public function show(Visit $visit)
@@ -69,20 +71,25 @@ class VisitController extends Controller
     }
 
     // PUT /api/visits/{visit} (admin o supervisor dueño)
-    public function update(Request $request, Visit $visit)
-    {
-        $data = $request->validate([
-            'client_id'     => 'sometimes|exists:clients,id',
-            'tecnico_id'    => 'sometimes|exists:users,id',
-            'scheduled_at'  => 'sometimes|date',
-            'notes'         => 'nullable|string',
-        ]);
+   public function update(Request $request, Visit $visit)
+{
+    $data = $request->validate([
+        'client_id'     => 'sometimes|exists:clients,id',
+        'tecnico_id'    => 'sometimes|exists:users,id',
+        'scheduled_at'  => 'sometimes|date',
+        'notes'         => 'nullable|string',
+    ]);
 
-        $visit->update($data);
-
-        return response()->json($visit->load(['client','supervisor','tecnico']));
+    // 👇 si cambiaron el técnico, alinear supervisor_id
+    if (isset($data['tecnico_id'])) {
+        $tecnico = User::findOrFail($data['tecnico_id']);
+        $data['supervisor_id'] = $tecnico->supervisor_id ?? $visit->supervisor_id;
     }
 
+    $visit->update($data);
+
+    return response()->json($visit->load(['client','supervisor','tecnico']));
+}
     // DELETE /api/visits/{visit} (solo admin)
     public function destroy(Visit $visit)
     {
