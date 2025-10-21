@@ -68,4 +68,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings/tecnico/{user}', [\App\Http\Controllers\WebSettingsController::class, 'showTecnico'])->name('settings.tecnico');
 });
 
+// Simple authenticated JSON endpoint for user search (autocomplete)
+Route::middleware('auth')->get('/_search/users', [\App\Http\Controllers\WebSettingsController::class, 'searchUsers'])->name('search.users');
+
 require __DIR__.'/auth.php';

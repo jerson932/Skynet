@@ -222,4 +222,28 @@ class WebSettingsController extends Controller
 
         return redirect()->route('settings.index')->with('status','Contraseña reseteada para '.$user->email);
     }
+
+    // Simple JSON endpoint for user search used by header autocomplete
+    public function searchUsers(Request $request)
+    {
+        $this->middleware('auth');
+
+        $q = $request->get('q', '');
+        $role = $request->get('role', null); // optional role filter (supervisor/tecnico)
+
+        $query = User::query();
+        if ($role) {
+            $query->whereHas('role', fn($r) => $r->where('slug', $role));
+        }
+
+        if (!empty($q)) {
+            $query->where(function($w) use ($q) {
+                $w->where('name', 'ilike', "%{$q}%")
+                  ->orWhere('email', 'ilike', "%{$q}%");
+            });
+        }
+
+        $results = $query->select('id','name','email')->limit(10)->get();
+        return response()->json($results);
+    }
 }
