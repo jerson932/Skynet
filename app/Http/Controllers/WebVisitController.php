@@ -85,13 +85,19 @@ $q = \App\Models\Visit::with(['client','supervisor','tecnico'])
     public function create(Request $request)
     {
         $user = $request->user();
-        if (!($user->isAdmin() || $user->isSupervisor())) {
+        if (!($user->isAdmin() || $user->isSupervisor() || $user->isTecnico())) {
             abort(403, 'No autorizado');
         }
 
         $clients  = Client::orderBy('name')->get();
-        $tecnicos = User::whereHas('role', fn($q)=>$q->where('slug','tecnico'))
-                        ->orderBy('name')->get();
+        // Si es supervisor, mostrar solo sus técnicos; si es admin, mostrar todos
+        if ($user->isSupervisor()) {
+            $tecnicos = $user->tecnicos()->orderBy('name')->get();
+        } elseif ($user->isAdmin()) {
+            $tecnicos = User::whereHas('role', fn($q)=>$q->where('slug','tecnico'))->orderBy('name')->get();
+        } else { // tecnico -> only self
+            $tecnicos = collect([$user]);
+        }
 
         return view('visits.create', compact('clients','tecnicos'));
     }
@@ -100,9 +106,11 @@ $q = \App\Models\Visit::with(['client','supervisor','tecnico'])
    public function store(Request $request)
 {
     $user = $request->user();
-    if (!($user->isAdmin() || $user->isSupervisor())) {
+    // Admin, supervisor, or tecnico can create (tecnico only for themselves)
+    if (!($user->isAdmin() || $user->isSupervisor() || $user->isTecnico())) {
         abort(403, 'No autorizado');
     }
+
 
     $data = $request->validate([
         'client_id'    => 'required|exists:clients,id',
@@ -111,7 +119,12 @@ $q = \App\Models\Visit::with(['client','supervisor','tecnico'])
         'notes'        => 'nullable|string',
     ]);
 
-    // 👇 supervisor = supervisor del técnico (si existe); si no, el creador
+    // If tecnico is creating, ensure they set tecnico_id to themselves
+    if ($user->isTecnico() && $data['tecnico_id'] != $user->id) {
+        abort(403, 'No autorizado para asignar a otro técnico');
+    }
+
+    // supervisor = supervisor del técnico (si existe); si no, el creador
     $tecnico = \App\Models\User::findOrFail($data['tecnico_id']);
     $data['supervisor_id'] = $tecnico->supervisor_id ?? $user->id;
 
@@ -183,4 +196,74 @@ public function show(Request $request, \App\Models\Visit $visit)
 
     return view('visits.show', compact('visit'));
 }
+
+    // Simple CSV export for reports (admin / supervisor / tecnico)
+    public function export(Request $request)
+    {
+        $user = $request->user();
+
+        $q = \App\Models\Visit::with(['client','supervisor','tecnico'])->orderBy('scheduled_at','desc');
+
+        if ($user->isSupervisor()) {
+            $q->where(function($w) use ($user){
+                $w->where('supervisor_id', $user->id)
+                  ->orWhereHas('tecnico', fn($t)=> $t->where('supervisor_id', $user->id));
+            });
+        } elseif ($user->isTecnico()) {
+            $q->where('tecnico_id', $user->id);
+        }
+
+        // optional filters
+        if ($request->filled('from')) $q->whereDate('scheduled_at', '>=', $request->input('from'));
+        if ($request->filled('to')) $q->whereDate('scheduled_at', '<=', $request->input('to'));
+
+        $visits = $q->get();
+
+        $filename = 'visits_report_'.now()->format('Ymd_His').'.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        // Determine requested format (accept both query param and regular input)
+        $format = strtolower((string) $request->get('format', ''));
+        $accept = strtolower((string) $request->header('Accept', ''));
+
+        // If caller requested XLSX format (via ?format=xlsx or via Accept header), generate spreadsheet
+        if ($format === 'xlsx' || str_contains($accept, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
+            $export = new \App\Exports\VisitsExport($visits);
+            $filename = 'visits_report_'.now()->format('Ymd_His').'.xlsx';
+            $headers = [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            ];
+            $stream = $export->toXlsxStream();
+            return response()->stream($stream, 200, $headers);
+        }
+
+        $columns = ['id','client','tecnico','supervisor','scheduled_at','check_in_at','check_out_at','status','notes'];
+
+        $callback = function() use ($visits, $columns) {
+            $fh = fopen('php://output', 'w');
+            fputcsv($fh, $columns);
+            foreach ($visits as $v) {
+                $status = $v->check_out_at ? 'completada' : ($v->check_in_at ? 'en curso' : 'pendiente');
+                fputcsv($fh, [
+                    $v->id,
+                    $v->client->name ?? '',
+                    optional($v->tecnico)->name ?? '',
+                    optional($v->supervisor)->name ?? '',
+                    $v->scheduled_at,
+                    $v->check_in_at,
+                    $v->check_out_at,
+                    $status,
+                    str_replace(["\r","\n"], [' ',' '], $v->notes ?? ''),
+                ]);
+            }
+            fclose($fh);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

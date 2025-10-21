@@ -27,11 +27,7 @@
     <div class="py-6">
         <div class="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
 
-            @if (session('status'))
-                <div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-800">
-                    {{ session('status') }}
-                </div>
-            @endif
+            @include('partials.flash')
 
             {{-- Filtro por fecha (opcional) --}}
             <form method="GET" class="flex w-full flex-col items-start gap-3 sm:flex-row sm:items-center">
@@ -48,6 +44,24 @@
                     </a>
                 @endif
             </form>
+
+            {{-- Export (XLSX) --}}
+            <form id="visits-export-form" method="GET" action="{{ route('visits.export') }}" target="visits-download-iframe" class="flex w-full flex-col items-start gap-2 sm:flex-row sm:items-center">
+                <input type="hidden" name="format" value="xlsx">
+                <label class="text-sm text-gray-600">Exportar</label>
+                <input type="date" name="from" value="{{ request('from') }}" class="w-full max-w-xs rounded-lg border-gray-300 px-3 py-2 shadow-sm">
+                <input type="date" name="to" value="{{ request('to') }}" class="w-full max-w-xs rounded-lg border-gray-300 px-3 py-2 shadow-sm">
+
+                <button id="export-xlsx" type="submit" name="format" value="xlsx" class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <svg class="spinner hidden h-4 w-4 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                    <span class="btn-text">Exportar XLSX</span>
+                </button>
+            </form>
+            {{-- Hidden iframe to perform download without leaving the page --}}
+            <iframe id="visits-download-iframe" name="visits-download-iframe" style="display:none;width:0;height:0;border:0;"></iframe>
 
             <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                 <div class="overflow-x-auto">
@@ -232,5 +246,57 @@
                 return false;
             }
         }
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('visits-export-form');
+            const btn = document.getElementById('export-xlsx');
+            const iframe = document.getElementById('visits-download-iframe');
+            if (!form || !btn) return;
+
+            let exportTimeout = null;
+            const EXPORT_TIMEOUT_MS = 45000; // 45 seconds fallback
+
+            form.addEventListener('submit', function (e) {
+                // show spinner and disable button to prevent double-click
+                const spinner = btn.querySelector('.spinner');
+                const text = btn.querySelector('.btn-text');
+                if (spinner) spinner.classList.remove('hidden');
+                if (text) text.textContent = 'Generando...';
+                btn.disabled = true;
+
+                // set a fallback timeout to restore the button if iframe doesn't fire
+                if (exportTimeout) clearTimeout(exportTimeout);
+                exportTimeout = setTimeout(() => {
+                    if (spinner) spinner.classList.add('hidden');
+                    if (text) text.textContent = 'Exportar XLSX';
+                    btn.disabled = false;
+                    // optional: notify user
+                    try { window.alert('La generación tardó demasiado. Intenta nuevamente o revisa la conexión.'); } catch (e) {}
+                }, EXPORT_TIMEOUT_MS);
+            });
+
+            // when iframe finishes loading (download completed or error page), restore button
+            if (iframe) {
+                iframe.addEventListener('load', function () {
+                    if (exportTimeout) { clearTimeout(exportTimeout); exportTimeout = null; }
+                    const spinner = btn.querySelector('.spinner');
+                    const text = btn.querySelector('.btn-text');
+                    if (spinner) spinner.classList.add('hidden');
+                    if (text) text.textContent = 'Exportar XLSX';
+                    btn.disabled = false;
+                });
+
+                // if user returns focus (maybe blocked permission dialogs), restore state
+                window.addEventListener('focus', function () {
+                    if (exportTimeout) { clearTimeout(exportTimeout); exportTimeout = null; }
+                    const spinner = btn.querySelector('.spinner');
+                    const text = btn.querySelector('.btn-text');
+                    if (spinner) spinner.classList.add('hidden');
+                    if (text) text.textContent = 'Exportar XLSX';
+                    btn.disabled = false;
+                });
+            }
+        });
     </script>
 </x-app-layout>

@@ -44,6 +44,12 @@
                             {{ __('Profile') }}
                         </x-dropdown-link>
 
+                            @if(Auth::user()->isAdmin() || Auth::user()->isSupervisor())
+                            <x-dropdown-link :href="route('settings.index')">
+                                {{ __('Ajustes') }}
+                            </x-dropdown-link>
+                            @endif
+
                         <!-- Authentication -->
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf

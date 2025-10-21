@@ -9,9 +9,7 @@
     </x-slot>
 
     <div class="p-6 max-w-5xl mx-auto space-y-4">
-        @if(session('status'))
-            <div class="bg-green-50 text-green-800 px-4 py-2 rounded">{{ session('status') }}</div>
-        @endif
+        @include('partials.flash')
 
         <form class="flex gap-2">
             <input name="q" value="{{ $q }}" placeholder="Buscar nombre o email" class="border rounded px-3 py-2 w-full max-w-md">

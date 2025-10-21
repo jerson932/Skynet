@@ -29,8 +29,42 @@
 
             <!-- Page Content -->
             <main>
-                {{ $slot }}
+                @include('partials.flash')
+                @isset($slot)
+                    {{ $slot }}
+                @else
+                    @yield('content')
+                @endisset
             </main>
+            <script>
+                // Flash animation: fade-in, auto-dismiss with pause-on-hover, manual close
+                (function(){
+                    const el = document.querySelector('.flash');
+                    if (!el) return;
+
+                    // trigger enter animation
+                    requestAnimationFrame(()=>{
+                        el.classList.remove('opacity-0','translate-y-2');
+                        el.classList.add('opacity-100','translate-y-0');
+                    });
+
+                    let timeoutMs = 5000;
+                    let timer = setTimeout(hideFlash, timeoutMs);
+
+                    function hideFlash(){
+                        el.style.transition = 'opacity 0.8s ease, transform 0.6s ease';
+                        el.style.opacity = '0';
+                        el.style.transform = 'translateY(-8px)';
+                        setTimeout(()=> el.remove(), 800);
+                    }
+
+                    el.addEventListener('mouseenter', ()=> { clearTimeout(timer); });
+                    el.addEventListener('mouseleave', ()=> { timer = setTimeout(hideFlash, 2000); });
+
+                    const btn = el.querySelector('.flash-close');
+                    if (btn) btn.addEventListener('click', hideFlash);
+                })();
+            </script>
         </div>
     </body>
 </html>

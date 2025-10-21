@@ -2,16 +2,23 @@
 
 namespace App\Providers;
 
-use App\Models\Visit;
-use App\Policies\VisitPolicy;
-use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Support\ServiceProvider;
 
-class AuthServiceProvider extends ServiceProvider
+class AppServiceProvider extends ServiceProvider
 {
-    protected $policies = [
-        Visit::class => VisitPolicy::class,
-    ];
+    /**
+     * Register any application services.
+     */
+    public function register(): void
+    {
+        $this->app->singleton('flash', function () {
+            return new \App\Services\Flash();
+        });
+    }
 
+    /**
+     * Bootstrap any application services.
+     */
     public function boot(): void
     {
         //
