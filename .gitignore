@@ -10,3 +10,4 @@ storage/framework/cache/
 storage/framework/views/
 storage/logs/
 node_modules/
+/public/storage
