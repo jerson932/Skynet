@@ -1,0 +1,26 @@
+# VCS
+.git
+.gitignore
+.gitattributes
+
+# Node
+node_modules
+npm-debug.log*
+yarn.lock
+pnpm-lock.yaml
+
+# Laravel runtime
+storage/framework/cache
+storage/framework/sessions
+storage/framework/views
+storage/logs
+
+# Tests y tooling
+tests
+phpunit.xml
+vendor/bin
+
+# Misceláneo
+*.log
+*.tmp
+.DS_Store
