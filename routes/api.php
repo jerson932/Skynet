@@ -25,7 +25,7 @@ Route::middleware('auth:sanctum')->get('/me', function (Request $req) {
     return $req->user();
 });
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:sanctum')->name('api.')->group(function () {
     Route::apiResource('clients', ClientController::class);
 
      Route::apiResource('visits', VisitController::class);
@@ -33,5 +33,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // acciones especiales para técnico
     Route::post('/visits/{visit}/check-in',  [VisitController::class, 'checkIn']);
     Route::post('/visits/{visit}/check-out', [VisitController::class, 'checkOut']);
+
+    // Ajustes / administración (Settings)
+    Route::get('/settings/users', [\App\Http\Controllers\SettingsController::class, 'indexUsers']);
+    Route::post('/settings/users', [\App\Http\Controllers\SettingsController::class, 'storeUser']);
+    Route::post('/settings/supervisors/{supervisor}/tecnicos', [\App\Http\Controllers\SettingsController::class, 'assignTecnicos']);
 });
 

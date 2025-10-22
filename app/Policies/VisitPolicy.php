@@ -30,7 +30,9 @@ class VisitPolicy
 
     public function create(User $user): bool
     {
-        return $user->isAdmin() || $user->isSupervisor();
+        // Admin, supervisor y técnicos pueden crear visitas.
+        // El controlador validará los datos según el rol (p.ej. técnico solo puede crear visitas para sí mismo).
+        return $user->isAdmin() || $user->isSupervisor() || $user->isTecnico();
     }
 
     public function update(User $user, Visit $visit): bool

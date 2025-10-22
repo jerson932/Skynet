@@ -23,16 +23,38 @@
                         @error('client_id') <p class="text-red-600 text-sm">{{ $message }}</p> @enderror
                     </div>
 
-                    <div>
-                        <label class="block font-medium">Técnico</label>
-                        <select name="tecnico_id" class="w-full border rounded px-2 py-1" required>
-                            <option value="">-- Selecciona un técnico --</option>
-                            @foreach($tecnicos as $t)
-                                <option value="{{ $t->id }}">{{ $t->name }} ({{ $t->email }})</option>
-                            @endforeach
-                        </select>
-                        @error('tecnico_id') <p class="text-red-600 text-sm">{{ $message }}</p> @enderror
-                    </div>
+                    @php $me = auth()->user(); @endphp
+                    @if($me->isTecnico())
+                        <div class="mb-4">
+                            <label class="block font-medium">Técnico</label>
+                            <div class="p-3 border rounded bg-gray-50">
+                                {{ $me->name }} ({{ $me->email }})
+                            </div>
+                            <input type="hidden" name="tecnico_id" value="{{ $me->id }}">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block font-medium">Supervisor asignado</label>
+                            <div class="p-3 border rounded bg-white">
+                                @if($me->supervisor)
+                                    {{ $me->supervisor->name }} — {{ $me->supervisor->email }}
+                                @else
+                                    <span class="text-gray-600">No tienes supervisor asignado</span>
+                                @endif
+                            </div>
+                        </div>
+                    @else
+                        <div>
+                            <label class="block font-medium">Técnico</label>
+                            <select name="tecnico_id" class="w-full border rounded px-2 py-1" required>
+                                <option value="">-- Selecciona un técnico --</option>
+                                @foreach($tecnicos as $t)
+                                    <option value="{{ $t->id }}">{{ $t->name }} ({{ $t->email }})</option>
+                                @endforeach
+                            </select>
+                            @error('tecnico_id') <p class="text-red-600 text-sm">{{ $message }}</p> @enderror
+                        </div>
+                    @endif
 
                     <div>
                         <label class="block font-medium">Fecha y hora programada</label>
