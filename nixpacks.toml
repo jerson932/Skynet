@@ -7,8 +7,10 @@ cmds = [
 ]
 
 [phases.build]
+# Compila assets y luego elimina node_modules para que no se copie al contenedor final
 cmds = [
-  "node ./node_modules/vite/bin/vite.js build"
+  "node ./node_modules/vite/bin/vite.js build",
+  "rm -rf node_modules"
 ]
 
 [start]
