@@ -1,0 +1,15 @@
+# nixpacks.toml
+
+[phases.install]
+cmds = [
+  "composer install --no-dev --prefer-dist --no-interaction",
+  "npm ci"
+]
+
+[phases.build]
+cmds = [
+  "node ./node_modules/vite/bin/vite.js build"
+]
+
+[start]
+cmd = "heroku-php-apache2 public/"
