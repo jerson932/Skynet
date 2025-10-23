@@ -46,11 +46,15 @@ chmod -R 775 storage bootstrap/cache
 if [ -f ".env.railway" ]; then
     echo "Using .env.railway configuration"
     cp .env.railway .env
+else
+    echo "Using default .env configuration"
 fi
 
 # Verificar que tenemos variables de entorno necesarias
-if [ -z "$PGHOST" ]; then
-    echo "Warning: Database variables not found. Make sure to configure PostgreSQL in Railway."
+if [ -z "$DB_HOST" ]; then
+    echo "Warning: Database variables not found. Check Railway configuration."
+else
+    echo "Database host found: $DB_HOST"
 fi
 
 # Tareas Laravel (idempotentes)
@@ -67,6 +71,10 @@ if ! grep -q "APP_KEY=base64:" .env; then
     php artisan key:generate --force
 fi
 
+# Verificar conexión a base de datos
+echo "Testing database connection..."
+timeout 30 php artisan tinker --execute="DB::connection()->getPdo(); echo 'Database connected successfully';" || echo "Database connection failed"
+
 # Ejecutar migraciones
 echo "Running database migrations..."
 php artisan migrate --force || echo "Migration failed, but continuing..."
@@ -74,6 +82,10 @@ php artisan migrate --force || echo "Migration failed, but continuing..."
 # Ejecutar seeders para crear usuarios por defecto
 echo "Running database seeders..."
 php artisan db:seed --force || echo "Seeder failed, but continuing..."
+
+# Ejecutar health check
+echo "Running health check..."
+php artisan app:health-check
 
 # Optimizaciones para producción
 php artisan config:cache

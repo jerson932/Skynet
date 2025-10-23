@@ -4,9 +4,21 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WebVisitController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WebClientController;
+use Illuminate\Support\Facades\DB;
 
 Route::get('/', function () {
     return view('welcome');
+});
+
+// Ruta de diagnóstico para Railway
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now(),
+        'environment' => app()->environment(),
+        'database' => DB::connection()->getPdo() ? 'connected' : 'disconnected',
+        'users_count' => \App\Models\User::count(),
+    ]);
 });
 
 // (Opcional) que el dashboard lleve a la lista de visitas
