@@ -30,6 +30,9 @@ class AppServiceProvider extends ServiceProvider
                 \Illuminate\Http\Request::HEADER_X_FORWARDED_PORT |
                 \Illuminate\Http\Request::HEADER_X_FORWARDED_PROTO
             );
+            
+            // Forzar URLs HTTPS para que las cookies funcionen
+            \Illuminate\Support\Facades\URL::forceScheme('https');
         }
     }
 }

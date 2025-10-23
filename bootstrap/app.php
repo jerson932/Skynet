@@ -12,8 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Desactivar middleware HTTPS problemático
-        // Railway maneja HTTPS automáticamente
+        // Middleware para confiar en Railway proxy
+        $middleware->web(prepend: [
+            \App\Http\Middleware\TrustRailwayProxy::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
