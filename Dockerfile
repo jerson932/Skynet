@@ -51,14 +51,8 @@ RUN chmod -R 755 public/build
 RUN chmod -R 755 public/images
 
 # Instalar dependencias PHP (ya con ext-gd disponible)
+# Instalar dependencias PHP (ya con ext-gd disponible)
 RUN composer install --no-dev --prefer-dist --no-interaction --no-scripts --no-progress
-
-echo "Running database migrations..."
-echo "Running database seeders..."
-echo "Running health check..."
-echo "Checking assets and images..."
-echo "Testing Laravel bootstrap..."
-echo "Server will start on 0.0.0.0:${PORT:-8080}"
 # Copiar script de arranque creado en docker/start.sh
 COPY docker/start.sh /usr/local/bin/start.sh
 
