@@ -10,15 +10,29 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Ruta de diagnóstico para Railway
+// Ruta de health check simple para Railway
 Route::get('/health', function () {
-    return response()->json([
-        'status' => 'ok',
-        'timestamp' => now(),
-        'environment' => app()->environment(),
-        'database' => DB::connection()->getPdo() ? 'connected' : 'disconnected',
-        'users_count' => \App\Models\User::count(),
-    ]);
+    return response('OK', 200)
+        ->header('Content-Type', 'text/plain');
+});
+
+// Ruta de diagnóstico completa
+Route::get('/status', function () {
+    try {
+        return response()->json([
+            'status' => 'ok',
+            'timestamp' => now(),
+            'environment' => app()->environment(),
+            'database' => DB::connection()->getPdo() ? 'connected' : 'disconnected',
+            'users_count' => \App\Models\User::count(),
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'timestamp' => now(),
+        ], 500);
+    }
 });
 
 // (Opcional) que el dashboard lleve a la lista de visitas

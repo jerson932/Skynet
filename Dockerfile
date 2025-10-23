@@ -122,12 +122,23 @@ php artisan route:cache
 php artisan view:cache
 
 echo "Starting web server on port ${PORT:-8080}..."
+
+# Verificar que Laravel funcione antes de iniciar el servidor
+echo "Testing Laravel bootstrap..."
+php artisan --version || echo "Laravel artisan failed"
+
+# Verificar que el puerto esté disponible
+echo "Server will start on 0.0.0.0:${PORT:-8080}"
+
 # Servir la app desde public/ usando el router de Laravel
 exec php -S 0.0.0.0:${PORT:-8080} -t public public/index.php
 BASH
 
 # Normalizar fin de línea por si se editó en Windows y dar permisos
 RUN sed -i 's/\r$//' /usr/local/bin/start.sh && chmod +x /usr/local/bin/start.sh
+
+# Exponer el puerto
+EXPOSE 8080
 
 # Arranque SIEMPRE con nuestro script
 ENTRYPOINT ["/usr/local/bin/start.sh"]
