@@ -191,15 +191,11 @@ public function sendMail(Request $request, \App\Models\Visit $visit)
         // Cargar relaciones para el PDF/mail
         $visit->load(['client','supervisor','tecnico']);
 
-        // Verificar configuración de correo
-        if (!config('mail.mailers.smtp.host')) {
-            throw new \Exception('Configuración de correo no disponible');
-        }
-
+        // Attempt to send using configured mailer (supporting SMTP, Postmark, SendGrid, etc.)
         \Illuminate\Support\Facades\Mail::to($visit->client->email)
             ->send(new \App\Mail\VisitClosedMail($visit));
 
-        \Log::info('Email enviado exitosamente', [
+        Log::info('Email enviado exitosamente', [
             'visit_id' => $visit->id,
             'client_email' => $visit->client->email,
             'user_id' => $user->id
@@ -209,7 +205,7 @@ public function sendMail(Request $request, \App\Models\Visit $visit)
 
     } catch (\Exception $e) {
         // Log full error for debugging
-        \Log::error('Error enviando correo', [
+        Log::error('Error enviando correo', [
             'visit_id' => $visit->id,
             'client_email' => $visit->client->email,
             'error' => $e->getMessage(),
@@ -227,6 +223,15 @@ public function sendMail(Request $request, \App\Models\Visit $visit)
         } else {
             // keep a concise version of the raw message for admins
             $friendly = 'Error al enviar correo: ' . (strlen($raw) > 250 ? substr($raw,0,247).'...' : $raw);
+        }
+
+        // If admin requested debug (query param), return JSON with details
+        if (request()->query('debug') && $user->isAdmin()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ], 500);
         }
 
         return back()->with('error', $friendly);
