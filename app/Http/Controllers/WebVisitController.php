@@ -46,7 +46,16 @@ $q = \App\Models\Visit::with(['client','supervisor','tecnico'])
     // Check-in (solo técnico asignado)
     public function checkIn(Request $request, Visit $visit)
     {
-        $this->authorize('mark', $visit);
+        // Verificar autenticación explícitamente
+        if (!auth()->check()) {
+            return redirect()->route('login')->with('error', 'Debe iniciar sesión para continuar');
+        }
+
+        try {
+            $this->authorize('mark', $visit);
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            return back()->with('error', 'No tiene permisos para realizar check-in en esta visita');
+        }
 
         $data = $request->validate([
             'lat' => 'required|numeric|between:-90,90',
@@ -59,7 +68,7 @@ $q = \App\Models\Visit::with(['client','supervisor','tecnico'])
             'check_in_lng' => $data['lng'],
         ]);
 
-        return back()->with('status', 'Check-in registrado');
+        return back()->with('status', 'Check-in registrado exitosamente');
     }
 
     // Check-out (solo técnico asignado)
@@ -174,16 +183,39 @@ public function sendMail(Request $request, \App\Models\Visit $visit)
     if (!$allowed) abort(403, 'No autorizado');
 
     if (empty($visit->client?->email)) {
-        return back()->with('status', 'El cliente no tiene email configurado.');
+        return back()->with('error', 'El cliente no tiene email configurado.');
     }
 
-    // Cargar relaciones para el PDF/mail
-    $visit->load(['client','supervisor','tecnico']);
+    try {
+        // Cargar relaciones para el PDF/mail
+        $visit->load(['client','supervisor','tecnico']);
 
-    \Illuminate\Support\Facades\Mail::to($visit->client->email)
-        ->send(new \App\Mail\VisitClosedMail($visit));
+        // Verificar configuración de correo
+        if (!config('mail.mailers.smtp.host')) {
+            throw new \Exception('Configuración de correo no disponible');
+        }
 
-    return back()->with('status', 'Correo enviado a '.$visit->client->email);
+        \Illuminate\Support\Facades\Mail::to($visit->client->email)
+            ->send(new \App\Mail\VisitClosedMail($visit));
+
+        \Log::info('Email enviado exitosamente', [
+            'visit_id' => $visit->id,
+            'client_email' => $visit->client->email,
+            'user_id' => $user->id
+        ]);
+
+        return back()->with('status', 'Correo enviado exitosamente a ' . $visit->client->email);
+
+    } catch (\Exception $e) {
+        \Log::error('Error enviando correo', [
+            'visit_id' => $visit->id,
+            'client_email' => $visit->client->email,
+            'error' => $e->getMessage(),
+            'user_id' => $user->id
+        ]);
+
+        return back()->with('error', 'Error al enviar correo: ' . $e->getMessage());
+    }
 }
 
 public function show(Request $request, \App\Models\Visit $visit)
@@ -230,31 +262,17 @@ public function show(Request $request, \App\Models\Visit $visit)
         $format = strtolower((string) $request->get('format', ''));
         $accept = strtolower((string) $request->header('Accept', ''));
 
-        // If caller requested XLSX format (via ?format=xlsx or via Accept header), generate spreadsheet
+        // En Railway, siempre usar CSV para evitar problemas
         if ($format === 'xlsx' || str_contains($accept, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
-            // En producción, usar CSV con nombre xlsx para compatibilidad
-            if (app()->environment('production')) {
-                $filename = 'visits_report_'.now()->format('Ymd_His').'.csv';
-                $headers = [
-                    'Content-Type' => 'text/csv',
-                    'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-                ];
-            } else {
-                // En desarrollo, intentar usar XLSX real
-                try {
-                    $export = new \App\Exports\VisitsExport($visits);
-                    $filename = 'visits_report_'.now()->format('Ymd_His').'.xlsx';
-                    $headers = [
-                        'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                        'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-                    ];
-                    $stream = $export->toXlsxStream();
-                    return response()->stream($stream, 200, $headers);
-                } catch (\Exception $e) {
-                    // Fallback a CSV si falla
-                    \Log::warning('XLSX export failed: ' . $e->getMessage());
-                }
-            }
+            $filename = 'visits_report_'.now()->format('Ymd_His').'.csv';
+            $headers = [
+                'Content-Type' => 'text/csv; charset=utf-8',
+                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0'
+            ];
+            // Continuar con el procesamiento CSV normal
         }
 
         $columns = ['id','client','tecnico','supervisor','scheduled_at','check_in_at','check_out_at','status','notes'];
