@@ -1,10 +1,22 @@
 # ---------- Etapa 1: Build de assets (Vite/Tailwind) ----------
 FROM node:20-alpine AS nodebuilder
 WORKDIR /app
+
+# Copiar archivos de configuración
 COPY package*.json ./
+COPY vite.config.js ./
+COPY tailwind.config.js ./
+COPY postcss.config.js ./
+
+# Instalar dependencias
 RUN npm ci
-COPY . .
-RUN npm run build              # genera public/build
+
+# Copiar código fuente
+COPY resources/ ./resources/
+COPY public/ ./public/
+
+# Build de assets
+RUN npm run build
 
 # ---------- Etapa 2: Imagen final PHP ----------
 FROM php:8.3-cli
@@ -24,8 +36,11 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 # Copiar proyecto
 COPY . .
 
-# Copiar assets construidos por Vite
-COPY --from=nodebuilder /app/public/build /app/public/build
+# Copiar assets construidos por Vite (sobrescribir los existentes)
+COPY --from=nodebuilder /app/public/build ./public/build
+
+# Asegurar que los assets sean accesibles
+RUN chmod -R 755 public/build
 
 # Instalar dependencias PHP (ya con ext-gd disponible)
 RUN composer install --no-dev --prefer-dist --no-interaction --no-scripts --no-progress
@@ -86,6 +101,10 @@ php artisan db:seed --force || echo "Seeder failed, but continuing..."
 # Ejecutar health check
 echo "Running health check..."
 php artisan app:health-check
+
+# Verificar que los assets existen
+echo "Checking assets..."
+ls -la public/build/ || echo "Build directory not found"
 
 # Optimizaciones para producción
 php artisan config:cache
