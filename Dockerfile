@@ -36,16 +36,51 @@ COPY <<'BASH' /usr/local/bin/start.sh
 #!/usr/bin/env bash
 set -e
 
+echo "Starting Railway deployment..."
+
 # Preparar directorios de Laravel
 mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache
-chmod -R 777 storage bootstrap/cache
+chmod -R 775 storage bootstrap/cache
+
+# Usar .env.railway si existe, sino usar .env
+if [ -f ".env.railway" ]; then
+    echo "Using .env.railway configuration"
+    cp .env.railway .env
+fi
+
+# Verificar que tenemos variables de entorno necesarias
+if [ -z "$PGHOST" ]; then
+    echo "Warning: Database variables not found. Make sure to configure PostgreSQL in Railway."
+fi
 
 # Tareas Laravel (idempotentes)
+echo "Setting up Laravel..."
 php artisan storage:link || true
-php artisan optimize:clear
-php artisan key:generate --force || true
-php artisan migrate --force
+php artisan config:clear
+php artisan cache:clear
+php artisan route:clear
+php artisan view:clear
 
+# Generar clave si no existe
+if ! grep -q "APP_KEY=base64:" .env; then
+    echo "Generating application key..."
+    php artisan key:generate --force
+fi
+
+# Ejecutar migraciones
+echo "Running database migrations..."
+php artisan migrate --force || echo "Migration failed, but continuing..."
+
+# Ejecutar seeders para crear usuarios por defecto
+echo "Running database seeders..."
+php artisan db:seed --force || echo "Seeder failed, but continuing..."
+
+# Optimizaciones para producción
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+echo "Starting web server on port ${PORT:-8080}..."
 # Servir la app desde public/ usando el router de Laravel
 exec php -S 0.0.0.0:${PORT:-8080} -t public public/index.php
 BASH
