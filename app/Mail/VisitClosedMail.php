@@ -21,12 +21,21 @@ class VisitClosedMail extends Mailable
 
     public function build()
     {
-        // Generar PDF desde la vista
-        $pdf = Pdf::loadView('pdf.visit', ['visit' => $this->visit])->output();
-        $fileName = 'reporte-visita-'.$this->visit->id.'.pdf';
+        $mail = $this->subject('Visita finalizada - '.$this->visit->client->name)
+            ->markdown('emails.visits.closed', ['visit' => $this->visit]);
 
-        return $this->subject('Visita finalizada - '.$this->visit->client->name)
-            ->markdown('emails.visits.closed', ['visit' => $this->visit])
-            ->attachData($pdf, $fileName, ['mime' => 'application/pdf']);
+        // Solo generar PDF en entorno local para evitar errores en Railway
+        if (!app()->environment('production')) {
+            try {
+                $pdf = Pdf::loadView('pdf.visit', ['visit' => $this->visit])->output();
+                $fileName = 'reporte-visita-'.$this->visit->id.'.pdf';
+                $mail->attachData($pdf, $fileName, ['mime' => 'application/pdf']);
+            } catch (\Exception $e) {
+                // Si falla la generación de PDF, continuar sin adjunto
+                \Log::warning('PDF generation failed: ' . $e->getMessage());
+            }
+        }
+
+        return $mail;
     }
 }

@@ -46,17 +46,18 @@
             <div class="flex flex-col lg:flex-row items-center gap-8">
                 <!-- Logo -->
                 <div class="flex items-center justify-center w-full lg:w-[45%]">
-                    @if (file_exists(public_path('images/skynet-logo.png')))
+                    @if (app()->environment('production'))
+                        <!-- Logo de texto para producción -->
+                        <div class="max-w-[320px] w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-6xl rounded-xl p-8 text-center shadow-2xl">
+                            SKYNET
+                        </div>
+                    @else
+                        <!-- Logo imagen para desarrollo -->
                         <img
                             src="{{ asset('images/skynet-logo.png') }}"
                             alt="Skynet Systems"
                             class="max-w-[320px] w-full"
                         >
-                    @else
-                        <!-- Fallback: Logo de texto -->
-                        <div class="max-w-[320px] w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-6xl rounded-lg p-8 text-center shadow-2xl">
-                            SKYNET
-                        </div>
                     @endif
                 </div>
 

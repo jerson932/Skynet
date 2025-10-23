@@ -1,12 +1,13 @@
-@if (file_exists(public_path('images/skynet-logo.png')))
+<!-- Usar siempre logo de texto en producción para evitar problemas de archivos -->
+@if (app()->environment('production'))
+    <div {{ $attributes->merge(['class' => 'h-16 w-auto mx-auto flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-xl rounded-lg px-6 py-2 shadow-lg']) }}>
+        SKYNET
+    </div>
+@else
+    <!-- En desarrollo local usar la imagen -->
     <img 
         src="{{ asset('images/skynet-logo.png') }}" 
         alt="Skynet Logo" 
         {{ $attributes->merge(['class' => 'h-16 w-auto mx-auto']) }}
     >
-@else
-    <!-- Fallback: Logo de texto si la imagen no está disponible -->
-    <div {{ $attributes->merge(['class' => 'h-16 w-auto mx-auto flex items-center justify-center bg-blue-600 text-white font-bold text-2xl rounded-lg px-4']) }}>
-        SKYNET
-    </div>
 @endif

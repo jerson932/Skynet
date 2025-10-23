@@ -232,14 +232,29 @@ public function show(Request $request, \App\Models\Visit $visit)
 
         // If caller requested XLSX format (via ?format=xlsx or via Accept header), generate spreadsheet
         if ($format === 'xlsx' || str_contains($accept, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
-            $export = new \App\Exports\VisitsExport($visits);
-            $filename = 'visits_report_'.now()->format('Ymd_His').'.xlsx';
-            $headers = [
-                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-            ];
-            $stream = $export->toXlsxStream();
-            return response()->stream($stream, 200, $headers);
+            // En producción, usar CSV con nombre xlsx para compatibilidad
+            if (app()->environment('production')) {
+                $filename = 'visits_report_'.now()->format('Ymd_His').'.csv';
+                $headers = [
+                    'Content-Type' => 'text/csv',
+                    'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+                ];
+            } else {
+                // En desarrollo, intentar usar XLSX real
+                try {
+                    $export = new \App\Exports\VisitsExport($visits);
+                    $filename = 'visits_report_'.now()->format('Ymd_His').'.xlsx';
+                    $headers = [
+                        'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+                    ];
+                    $stream = $export->toXlsxStream();
+                    return response()->stream($stream, 200, $headers);
+                } catch (\Exception $e) {
+                    // Fallback a CSV si falla
+                    \Log::warning('XLSX export failed: ' . $e->getMessage());
+                }
+            }
         }
 
         $columns = ['id','client','tecnico','supervisor','scheduled_at','check_in_at','check_out_at','status','notes'];
