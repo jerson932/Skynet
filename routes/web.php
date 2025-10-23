@@ -114,9 +114,41 @@ Route::middleware('auth')->group(function () {
 });
 
 // Debug route to test mail sending (authenticated only)
+// Safe check mode: append ?check=1 to see mail-related env/config without sending mail.
 Route::middleware('auth')->get('/debug/mail-test', function () {
     try {
         $user = request()->user();
+
+        // If admin requests a dry-run check, return useful environment/config values.
+        if (request()->query('check')) {
+            $env = [
+                'app_env' => env('APP_ENV'),
+                'mail_mailer' => env('MAIL_MAILER'),
+                'postmark_token_exists' => !empty(env('POSTMARK_TOKEN')),
+                'mail_from_address_env' => env('MAIL_FROM_ADDRESS'),
+                'mail_from_name_env' => env('MAIL_FROM_NAME'),
+                'mail_fallback_from_address' => env('MAIL_FALLBACK_FROM_ADDRESS'),
+                'mail_reply_to_address' => env('MAIL_REPLY_TO_ADDRESS'),
+                'config_mail_from_address' => config('mail.from.address'),
+                'config_mail_from_name' => config('mail.from.name'),
+            ];
+
+            // Also include a small sample of the Visit model if an id is provided
+            $visitSample = null;
+            if (request()->filled('visit_id')) {
+                $vid = intval(request()->query('visit_id'));
+                $visitSample = \App\Models\Visit::with(['client','supervisor','tecnico'])->find($vid);
+            }
+
+            return response()->json([
+                'status' => 'ok',
+                'env' => $env,
+                'visit_sample' => $visitSample,
+                'timestamp' => now(),
+            ]);
+        }
+
+        // Default behavior: attempt to send a simple test mail to the configured from address or the admin's email.
         $to = config('mail.from.address') ?: ($user?->email ?? '');
         \Illuminate\Support\Facades\Mail::raw('Prueba de envío desde Skynet: ' . now(), function($m) use ($to) {
             $m->to($to)->subject('Skynet - Test Mail');
