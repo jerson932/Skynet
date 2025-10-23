@@ -12,12 +12,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Middleware desactivado temporalmente para debugging
-        // if (env('APP_ENV') === 'production') {
-        //     $middleware->web(append: [
-        //         \App\Http\Middleware\ForceHttps::class,
-        //     ]);
-        // }
+        // Activar HTTPS en producción
+        if (env('APP_ENV') === 'production') {
+            $middleware->web(append: [
+                \App\Http\Middleware\ForceHttps::class,
+            ]);
+        }
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
