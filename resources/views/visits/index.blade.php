@@ -221,28 +221,80 @@
 
     {{-- Geolocalización: rellena lat/lng al enviar Check-in / Check-out --}}
     <script>
+        // Enhanced geolocation: retry once on timeout/unavailable, show clear messages on permission denied,
+        // and fall back to manual coordinate input if automatic geolocation fails.
         async function fillGeo(form) {
             const lat = form.querySelector('input[name="lat"]');
             const lng = form.querySelector('input[name="lng"]');
 
             if (!navigator.geolocation) {
-                alert('Tu navegador no permite geolocalización.');
-                return false;
+                alert('Tu navegador no soporta geolocalización. Introduce las coordenadas manualmente.');
+                return await manualFallback(lat, lng);
             }
 
-            const getPosition = () => new Promise((resolve, reject) => {
+            const getPosition = (timeoutMs = 8000) => new Promise((resolve, reject) => {
                 navigator.geolocation.getCurrentPosition(resolve, reject, {
-                    enableHighAccuracy: true, timeout: 8000, maximumAge: 0
+                    enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 0
                 });
             });
 
+            // Try primary attempt
             try {
-                const pos = await getPosition();
+                const pos = await getPosition(8000);
                 lat.value = pos.coords.latitude.toFixed(6);
                 lng.value = pos.coords.longitude.toFixed(6);
-                return true; // envía el form
-            } catch (e) {
+                return true;
+            } catch (err) {
+                // Distinguish error types
+                const code = err && err.code;
+                // PERMISSION_DENIED = 1, POSITION_UNAVAILABLE = 2, TIMEOUT = 3
+                if (code === 1) {
+                    // Permission denied
+                    // Provide actionable instruction because browser permission dialog may be blocked
+                    const ok = confirm('Permiso de ubicación denegado. Activa la ubicación en tu navegador y vuelve a intentarlo. ¿Quieres introducir las coordenadas manualmente en su lugar?');
+                    if (ok) return await manualFallback(lat, lng);
+                    return false;
+                }
+
+                // For timeout or position unavailable, retry once with a slightly longer timeout
+                if (code === 2 || code === 3 || !code) {
+                    try {
+                        const pos2 = await getPosition(12000);
+                        lat.value = pos2.coords.latitude.toFixed(6);
+                        lng.value = pos2.coords.longitude.toFixed(6);
+                        return true;
+                    } catch (err2) {
+                        // Still failing - suggest manual fallback
+                        const useManual = confirm('No se pudo obtener tu ubicación automáticamente (tiempo de espera/ubicación no disponible). ¿Quieres introducir las coordenadas manualmente?');
+                        if (useManual) return await manualFallback(lat, lng);
+                        alert('No se pudo obtener tu ubicación. Activa GPS/ubicación e inténtalo otra vez.');
+                        return false;
+                    }
+                }
+
+                // Default fallback
                 alert('No se pudo obtener tu ubicación. Activa GPS/ubicación e inténtalo otra vez.');
+                return false;
+            }
+        }
+
+        // Prompt user for manual coordinates in format "lat,lng". Returns true when filled and valid.
+        async function manualFallback(latInput, lngInput) {
+            try {
+                const value = window.prompt('Introduce tus coordenadas manualmente en el formato: lat,lng (por ejemplo: -34.603722,-58.381592)');
+                if (!value) return false;
+                const parts = value.split(',').map(s => s.trim());
+                if (parts.length !== 2) { alert('Formato inválido. Usa lat,lng'); return false; }
+                const lat = parseFloat(parts[0]);
+                const lng = parseFloat(parts[1]);
+                if (Number.isNaN(lat) || Number.isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+                    alert('Coordenadas inválidas. Asegúrate de usar valores válidos para latitud y longitud.');
+                    return false;
+                }
+                latInput.value = lat.toFixed(6);
+                lngInput.value = lng.toFixed(6);
+                return true;
+            } catch (e) {
                 return false;
             }
         }

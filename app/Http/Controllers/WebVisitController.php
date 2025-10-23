@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Visit;
 use App\Models\Client;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 
 class WebVisitController extends Controller
@@ -207,6 +208,7 @@ public function sendMail(Request $request, \App\Models\Visit $visit)
         return back()->with('status', 'Correo enviado exitosamente a ' . $visit->client->email);
 
     } catch (\Exception $e) {
+        // Log full error for debugging
         \Log::error('Error enviando correo', [
             'visit_id' => $visit->id,
             'client_email' => $visit->client->email,
@@ -214,7 +216,20 @@ public function sendMail(Request $request, \App\Models\Visit $visit)
             'user_id' => $user->id
         ]);
 
-        return back()->with('error', 'Error al enviar correo: ' . $e->getMessage());
+        // Friendly, actionable message for common network/SMTP errors
+        $raw = $e->getMessage();
+        $friendly = 'Error al enviar correo.';
+
+        if (str_contains(strtolower($raw),'connection') || str_contains(strtolower($raw),'stream_socket_client') || str_contains(strtolower($raw),'timed out')) {
+            $friendly = 'No se pudo conectar con el servidor SMTP. En Railway muchos proveedores bloquean el puerto 587 o requieren un proveedor transaccional (SendGrid, Mailgun). Revisa las variables de entorno MAIL_* en tu proyecto (por ejemplo usa SendGrid con MAIL_HOST=smtp.sendgrid.net, MAIL_USERNAME=apikey y MAIL_PASSWORD=\"TU_API_KEY\").';
+        } elseif (str_contains(strtolower($raw),'authentication') || str_contains(strtolower($raw),'535')) {
+            $friendly = 'Fallo de autenticación SMTP. Revisa MAIL_USERNAME y MAIL_PASSWORD en las variables de entorno.';
+        } else {
+            // keep a concise version of the raw message for admins
+            $friendly = 'Error al enviar correo: ' . (strlen($raw) > 250 ? substr($raw,0,247).'...' : $raw);
+        }
+
+        return back()->with('error', $friendly);
     }
 }
 
