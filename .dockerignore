@@ -1,6 +1,5 @@
 # evita recursión y reduce el contexto
 public/storage
-storage
 vendor
 node_modules
 .git
