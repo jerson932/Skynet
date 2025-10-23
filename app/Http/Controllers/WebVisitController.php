@@ -187,13 +187,33 @@ public function sendMail(Request $request, \App\Models\Visit $visit)
         return back()->with('error', 'El cliente no tiene email configurado.');
     }
 
-    try {
+        try {
         // Cargar relaciones para el PDF/mail
         $visit->load(['client','supervisor','tecnico']);
 
+        // Build the mailable so we can optionally override From/Reply-To per-message.
+        $mailable = new \App\Mail\VisitClosedMail($visit);
+
+        // Optional per-message fallback: send from a verified personal address (no DNS required).
+        // Set these env vars in Railway if you want to use this workaround:
+        // MAIL_FALLBACK_FROM_ADDRESS, MAIL_FALLBACK_FROM_NAME, MAIL_REPLY_TO_ADDRESS
+        $fallbackFrom = env('MAIL_FALLBACK_FROM_ADDRESS');
+        if ($fallbackFrom) {
+            $fallbackName = env('MAIL_FALLBACK_FROM_NAME', config('mail.from.name'));
+            // Set Reply-To to the university address (or whatever you prefer)
+            $replyTo = env('MAIL_REPLY_TO_ADDRESS', config('mail.from.address'));
+            try {
+                $mailable->from($fallbackFrom, $fallbackName);
+                if ($replyTo) $mailable->replyTo($replyTo);
+                Log::info('Using per-message fallback From for visit email', ['from' => $fallbackFrom, 'reply_to' => $replyTo, 'visit_id' => $visit->id]);
+            } catch (\Exception $ex) {
+                // If the mailable class doesn't allow chaining, ignore and continue (we'll still try default send)
+                Log::warning('Could not override mailable From/Reply-To: ' . $ex->getMessage(), ['visit_id' => $visit->id]);
+            }
+        }
+
         // Attempt to send using configured mailer (supporting SMTP, Postmark, SendGrid, etc.)
-        \Illuminate\Support\Facades\Mail::to($visit->client->email)
-            ->send(new \App\Mail\VisitClosedMail($visit));
+        \Illuminate\Support\Facades\Mail::to($visit->client->email)->send($mailable);
 
         Log::info('Email enviado exitosamente', [
             'visit_id' => $visit->id,
