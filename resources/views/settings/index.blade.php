@@ -2,10 +2,16 @@
 
 @section('content')
 <div class="max-w-6xl mx-auto py-6">
-    <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between mb-4">
         <h1 class="text-2xl font-semibold">Usuarios</h1>
-        <a href="{{ route('settings.create') }}" class="px-4 py-2 bg-indigo-600 text-white rounded shadow">Crear usuario</a>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('settings.create') }}" class="px-4 py-2 bg-indigo-600 text-white rounded shadow">Crear usuario</a>
+            @if(Auth::user()->isAdmin())
+                <button id="btn-mail-test" class="px-4 py-2 bg-purple-600 text-white rounded shadow">Enviar correo de prueba</button>
+            @endif
+        </div>
     </div>
+    <div id="mail-test-toast" class="hidden fixed bottom-6 right-6 bg-white border rounded shadow p-3"></div>
 
     <div class="bg-white shadow rounded overflow-hidden">
         <table class="min-w-full divide-y">
@@ -55,3 +61,38 @@
     <div class="mt-4">{{ $users->links() }}</div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    const btn = document.getElementById('btn-mail-test');
+    const toast = document.getElementById('mail-test-toast');
+    if (!btn) return;
+
+    btn.addEventListener('click', async function(){
+        btn.disabled = true; btn.textContent = 'Enviando...';
+        try {
+            const res = await fetch('/debug/mail-test', { credentials: 'same-origin' });
+            if (!res.ok) {
+                const err = await res.json().catch(()=>({message:'Error desconocido'}));
+                showToast('Error: ' + (err.message || JSON.stringify(err)), true);
+            } else {
+                const j = await res.json();
+                showToast('OK: correo enviado a ' + j.to);
+            }
+        } catch (e) {
+            showToast('Error de red: ' + e.message, true);
+        } finally {
+            btn.disabled = false; btn.textContent = 'Enviar correo de prueba';
+        }
+    });
+
+    function showToast(msg, isError=false){
+        toast.textContent = msg;
+        toast.classList.remove('hidden');
+        toast.style.borderLeft = isError ? '4px solid #e53e3e' : '4px solid #10b981';
+        setTimeout(()=>{ toast.classList.add('hidden'); }, 7000);
+    }
+});
+</script>
+@endpush
