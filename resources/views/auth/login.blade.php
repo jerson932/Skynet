@@ -1,9 +1,24 @@
 <x-guest-layout>
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
+    
+    <!-- Debug: Mostrar errores generales -->
+    @if ($errors->any())
+        <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     <form method="POST" action="{{ route('login') }}">
         @csrf
+        <!-- Debug: Mostrar token CSRF -->
+        @if (app()->environment('production'))
+            <input type="hidden" name="debug_token" value="{{ csrf_token() }}">
+        @endif
 
         <!-- Email Address -->
         <div>

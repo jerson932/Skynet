@@ -26,6 +26,8 @@ Route::get('/status', function () {
             'environment' => app()->environment(),
             'database' => DB::connection()->getPdo() ? 'connected' : 'disconnected',
             'users_count' => \App\Models\User::count(),
+            'csrf_token' => csrf_token(),
+            'session_id' => session()->getId(),
         ]);
     } catch (\Exception $e) {
         return response()->json([
@@ -34,6 +36,22 @@ Route::get('/status', function () {
             'timestamp' => now(),
         ], 500);
     }
+});
+
+// Ruta de debug para login
+Route::post('/debug-login', function (\Illuminate\Http\Request $request) {
+    \Log::info('Debug login received', [
+        'all_data' => $request->all(),
+        'method' => $request->method(),
+        'csrf' => $request->header('X-CSRF-TOKEN') ?: 'none',
+        'session_token' => session()->token(),
+    ]);
+    
+    return response()->json([
+        'received' => $request->all(),
+        'method' => $request->method(),
+        'csrf_valid' => $request->session()->token() === $request->input('_token'),
+    ]);
 });
 
 // (Opcional) que el dashboard lleve a la lista de visitas

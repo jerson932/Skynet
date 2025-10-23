@@ -24,11 +24,32 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
+        // Debug para Railway
+        \Log::info('Login attempt', [
+            'email' => $request->email,
+            'user_agent' => $request->userAgent(),
+            'ip' => $request->ip(),
+            'secure' => $request->isSecure(),
+            'headers' => $request->headers->all()
+        ]);
 
-        $request->session()->regenerate();
+        try {
+            $request->authenticate();
+            
+            \Log::info('Authentication successful for: ' . $request->email);
+            
+            $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+            return redirect()->intended(route('dashboard', absolute: false));
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Authentication failed', [
+                'email' => $request->email,
+                'errors' => $e->errors()
+            ]);
+            
+            // Redirigir de vuelta con errores
+            return back()->withErrors($e->errors())->withInput($request->only('email', 'remember'));
+        }
     }
 
     /**
