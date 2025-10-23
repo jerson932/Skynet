@@ -12,8 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Forzar HTTPS en producción
-        if (app()->environment('production')) {
+        // Forzar HTTPS en producción usando ENV directamente
+        if (env('APP_ENV') === 'production') {
             $middleware->web(append: [
                 \App\Http\Middleware\ForceHttps::class,
             ]);
