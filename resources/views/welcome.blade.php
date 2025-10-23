@@ -10,14 +10,28 @@
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
 
     <!-- Styles / Scripts -->
-    @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if (app()->environment('production'))
+        <!-- Usar Tailwind CSS desde CDN en producción -->
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        fontFamily: {
+                            sans: ['Instrument Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                        },
+                        colors: {
+                            'custom-bg': '#FDFDFC',
+                            'custom-dark': '#0a0a0a',
+                            'custom-text': '#1b1b18'
+                        }
+                    }
+                }
+            }
+        </script>
     @else
-        {{-- Tailwind inline (del stub de Laravel) --}}
-        <style>
-            /*! tailwindcss v4.0.7 ... (se mantiene tal cual tu bloque) */
-            /* ——— POR BREVEDAD: deja aquí todo tu bloque <style> tal como lo pegaste ——— */
-        </style>
+        <!-- Desarrollo local con Vite -->
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
     @endif
 </head>
 <body
