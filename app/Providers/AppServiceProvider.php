@@ -21,10 +21,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Forzar HTTPS en producción
+        // Solo configurar proxies confiables para Railway
         if (app()->environment('production')) {
-            \Illuminate\Support\Facades\URL::forceScheme('https');
-            
             // Configurar proxies confiables para Railway
             request()->setTrustedProxies(['*'], 
                 \Illuminate\Http\Request::HEADER_X_FORWARDED_FOR |

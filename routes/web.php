@@ -13,7 +13,8 @@ Route::get('/', function () {
 // Ruta de health check simple para Railway
 Route::get('/health', function () {
     return response('OK', 200)
-        ->header('Content-Type', 'text/plain');
+        ->header('Content-Type', 'text/plain')
+        ->header('Cache-Control', 'no-cache, no-store, must-revalidate');
 });
 
 // Ruta de diagnóstico completa

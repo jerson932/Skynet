@@ -12,12 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Activar HTTPS en producción
-        if (env('APP_ENV') === 'production') {
-            $middleware->web(append: [
-                \App\Http\Middleware\ForceHttps::class,
-            ]);
-        }
+        // Desactivar middleware HTTPS problemático
+        // Railway maneja HTTPS automáticamente
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
