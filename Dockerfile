@@ -11,9 +11,12 @@ COPY postcss.config.js ./
 # Instalar dependencias
 RUN npm ci
 
-# Copiar código fuente
+# Copiar código fuente y recursos
 COPY resources/ ./resources/
 COPY public/ ./public/
+
+# Verificar que las imágenes se copiaron
+RUN ls -la public/images/ || echo "Images not copied to nodebuilder"
 
 # Build de assets
 RUN npm run build
@@ -39,8 +42,13 @@ COPY . .
 # Copiar assets construidos por Vite (sobrescribir los existentes)
 COPY --from=nodebuilder /app/public/build ./public/build
 
-# Asegurar que los assets sean accesibles
+# Asegurarse de que las imágenes estén presentes
+COPY --from=nodebuilder /app/public/images ./public/images
+
+# Asegurar que todas las imágenes y assets públicos existan
+RUN chmod -R 755 public/
 RUN chmod -R 755 public/build
+RUN chmod -R 755 public/images
 
 # Instalar dependencias PHP (ya con ext-gd disponible)
 RUN composer install --no-dev --prefer-dist --no-interaction --no-scripts --no-progress
@@ -103,8 +111,10 @@ echo "Running health check..."
 php artisan app:health-check
 
 # Verificar que los assets existen
-echo "Checking assets..."
+echo "Checking assets and images..."
 ls -la public/build/ || echo "Build directory not found"
+ls -la public/images/ || echo "Images directory not found"
+echo "Logo file exists:" && ls -la public/images/skynet-logo.png || echo "Logo not found"
 
 # Optimizaciones para producción
 php artisan config:cache
