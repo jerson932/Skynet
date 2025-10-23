@@ -221,14 +221,16 @@
 
     {{-- Geolocalización: modal con mapa (Leaflet) para elegir ubicación o usar ubicación automática --}}
     {{-- Leaflet CSS/JS (CDN) --}}
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+4m6w4bJmXrE0qfKJw6qk2Q1K9p2u1vV+0wXkM6qo=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j8g1+0b6bQ5xv6z1bQ2u3n6Yy1z9e4lq6ZfXQ2E=" crossorigin=""></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
         /* simple modal styles */
         .geo-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:60; }
         .geo-modal { background: white; border-radius: .5rem; width: 90%; max-width: 900px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); overflow: hidden; }
-        .geo-modal .map { height: 350px; }
+    .geo-modal .map { height: 350px; }
+    /* ensure leaflet tiles and markers render in modal */
+    #geo-map { width: 100%; height: 350px; }
         .geo-modal .modal-body { padding: 1rem; }
         .geo-modal .modal-footer { padding: 0.75rem 1rem; display:flex; justify-content:flex-end; gap:0.5rem; }
     </style>
