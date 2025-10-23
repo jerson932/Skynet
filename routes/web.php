@@ -113,6 +113,21 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings/tecnico/{user}', [\App\Http\Controllers\WebSettingsController::class, 'showTecnico'])->name('settings.tecnico');
 });
 
+// Debug route to test mail sending (authenticated only)
+Route::middleware('auth')->get('/debug/mail-test', function () {
+    try {
+        $user = request()->user();
+        $to = config('mail.from.address') ?: ($user?->email ?? '');
+        \Illuminate\Support\Facades\Mail::raw('Prueba de envío desde Skynet: ' . now(), function($m) use ($to) {
+            $m->to($to)->subject('Skynet - Test Mail');
+        });
+        return response()->json(['status' => 'sent', 'to' => $to]);
+    } catch (\Exception $e) {
+        \Illuminate\Support\Facades\Log::error('Mail test failed', ['error' => $e->getMessage()]);
+        return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+    }
+})->name('debug.mail')->middleware('auth');
+
 // Simple authenticated JSON endpoint for user search (autocomplete)
 Route::middleware('auth')->get('/_search/users', [\App\Http\Controllers\WebSettingsController::class, 'searchUsers'])->name('search.users');
 
